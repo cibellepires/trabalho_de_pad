@@ -1,3 +1,4 @@
 # trabalho_de_pad
 Trabalho da disciplina Pensamento Analítico de Dados - Bacharelado Inteligência Artificial
-Integrantes: Cibelle Pires Botelho, Yasmin Mageste, Julia Jaime Biancolini, Giovana Faleiro e Gustavo Pires Fontana
+
+**Integrantes**: Cibelle Pires Botelho, Yasmin Mageste, Julia Jaime Biancolini, Giovana Faleiro e Gustavo Pires Fontana
