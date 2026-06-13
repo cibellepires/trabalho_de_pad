@@ -11,7 +11,7 @@ referência: <https://artificialcorner.com/p/first-ml-model>
 
 A análise de sentimentos é uma das tarefas mais recorrentes em Processamento de Linguagem Natural (PLN), com aplicações em sistemas de recomendação, monitoramento de reputação de marcas, análise de avaliações de produtos e pesquisas de opinião.
 
-O projeto **FMF — First Machine Learning Model** utiliza esse domínio como contexto para apresentar, de forma didática, as principais etapas de construção de um pipeline de Machine Learning supervisionado para classificação de textos.
+O projeto utiliza esse domínio como contexto para apresentar, de forma didática, as principais etapas de construção de um pipeline de Machine Learning supervisionado para classificação de textos.
 
 ## Problema Abordado
 
