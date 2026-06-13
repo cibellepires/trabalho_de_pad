@@ -279,5 +279,17 @@ Nesta etapa, os resultados obtidos pelos modelos são interpretados e apresentad
 * **Auxiliar** processos de análise de opinião, monitoramento de satisfação e organização de feedbacks.
 * **Servir como base** para aplicações futuras mais avançadas, utilizando embeddings, redes neurais ou modelos baseados em Transformers.
 
+## Próximos Passos
 
+### Semana 3 — Modelagem e Comunicação
+
+Estudo da implementação dos modelos utilizados no projeto de referência, incluindo a análise do processo de treinamento, comparação de desempenho e avaliação das métricas. Também será aprofundada a etapa de comunicação dos resultados, buscando compreender como as conclusões do projeto são apresentadas e relacionadas ao problema inicialmente definido.
+
+### Semana 4 — Definição e Implementação da Originalidade
+
+Definição da contribuição original do projeto, identificando qual etapa do ciclo AGEMC será modificada, ampliada ou adaptada. Nesta semana, também será realizada a implementação da proposta escolhida, com a descrição das alterações realizadas e da justificativa para sua aplicação.
+
+### Semana 5 — Apresentação Final
+
+Preparação e realização de uma apresentação para a turma, reunindo todas as etapas desenvolvidas ao longo do projeto. A apresentação deverá abordar o problema investigado, a obtenção e exploração dos dados, a modelagem, a comunicação dos resultados e a contribuição original implementada.
 
