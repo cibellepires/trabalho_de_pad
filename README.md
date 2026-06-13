@@ -192,6 +192,92 @@ O experimento demonstra que a preparação dos dados, o balanceamento das classe
 
 Apesar das limitações, o projeto oferece uma base adequada para compreender o funcionamento de tarefas supervisionadas de classificação textual e pode ser expandido posteriormente com técnicas mais avançadas de PLN e Deep Learning.
 
+#Etapas do AGEMC
+## ASK — Formulação do Problema
+A etapa inicial do projeto FMF parte da pergunta: **“Levando em consideração o contexto de revisões de filmes, conseguimos dizer se a revisão foi positiva ou negativa com base no que está escrito?”** Com base nessa questão, o objetivo é desenvolver um modelo capaz de interpretar o conteúdo textual de uma crítica e atribuir a ela uma das duas categorias possíveis de sentimento. Dessa forma, o projeto é estruturado como um problema de **classificação binária de texto**, no qual a crítica representa a informação de entrada e o sentimento, positivo ou negativo, representa a resposta esperada. Como cada exemplo do conjunto de dados já possui uma classificação associada, o aprendizado ocorre de maneira supervisionada, permitindo que o modelo identifique padrões presentes na linguagem e os utilize na análise de novas revisões.
 
-## A - ASK 
-Levando em consideração o contexto de revisões de filmes, conseguimos dizer se a revisão foi positiva ou negativa com base no que está escrito?
+## GET — Obtenção dos Dados
+
+Nesta etapa, são reunidos os dados necessários para o desenvolvimento do projeto. A base utilizada é o **IMDB Dataset**, disponibilizado publicamente na plataforma Kaggle e composto por 50.000 avaliações de filmes. O conjunto apresenta duas variáveis principais: `review`, que armazena o texto escrito pelo usuário, e `sentiment`, que indica se a avaliação foi classificada como positiva ou negativa. Para tornar o experimento mais simples e reduzir o tempo de processamento, é selecionada uma amostra de 10.000 registros. Essa amostra é construída de forma propositalmente desbalanceada, contendo 9.000 críticas positivas e 1.000 negativas, permitindo que o projeto também explore os impactos do desequilíbrio entre classes e as estratégias utilizadas para corrigi-lo nas etapas posteriores.
+
+link dos dados: https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews
+
+## EXPLORE — Exploração e Preparação dos Dados
+
+A etapa de exploração tem como objetivo compreender a estrutura do conjunto de dados e prepará-lo para o treinamento dos modelos. Nesse momento, são observadas a distribuição das classes, a quantidade de registros disponíveis, as variáveis presentes e a forma como os textos serão representados numericamente. Essa análise é importante porque problemas como desbalanceamento, divisão inadequada dos dados ou vazamento de informações podem comprometer a avaliação dos classificadores.
+
+### a) Análise e Tratamento do Desbalanceamento
+
+A amostra inicial contém 10.000 críticas, distribuídas de forma desigual entre as classes: 9.000 avaliações positivas e 1.000 negativas. Esse desbalanceamento pode levar o modelo a favorecer a classe majoritária, alcançando uma acurácia aparentemente elevada mesmo sem aprender adequadamente os padrões associados às críticas negativas.
+
+Para corrigir esse problema, é aplicada a técnica de **undersampling aleatório** com a classe `RandomUnderSampler`, da biblioteca `imbalanced-learn`. O procedimento reduz a quantidade de exemplos positivos até igualá-la à quantidade de exemplos negativos. Ao final, é obtido o conjunto balanceado `df_review_bal`, composto por 2.000 registros, sendo 1.000 avaliações positivas e 1.000 negativas.
+
+O balanceamento permite que as duas classes tenham a mesma influência durante o treinamento. Entretanto, como o undersampling descarta parte dos registros da classe majoritária, essa solução também reduz a quantidade de informações disponíveis para o modelo.
+
+### b) Separação entre Treinamento e Teste
+
+Após o balanceamento, os dados são divididos em conjuntos de treinamento e teste por meio da função `train_test_split`, disponibilizada pelo `scikit-learn`. A divisão reserva 67% dos registros para treinamento e 33% para teste.
+
+O conjunto de treinamento é utilizado para que os algoritmos identifiquem padrões linguísticos associados aos sentimentos positivo e negativo. Já o conjunto de teste permanece separado durante o aprendizado e é utilizado somente para verificar o comportamento dos modelos diante de críticas não observadas anteriormente.
+
+Considerando o conjunto balanceado de 2.000 registros, a divisão resulta em aproximadamente 1.340 críticas para treinamento e 660 para teste. Para preservar a proporção das classes em ambas as partes, a divisão pode ser realizada de forma estratificada, utilizando o parâmetro `stratify`.
+
+### c) Conversão dos Textos em Representações Numéricas
+
+Os textos das críticas não podem ser processados diretamente pelos algoritmos clássicos de Machine Learning. Por isso, eles precisam ser transformados em vetores numéricos que representem as palavras presentes em cada documento.
+
+O projeto apresenta duas técnicas baseadas no modelo **Bag of Words**, em que cada palavra do vocabulário corresponde a uma característica:
+
+* `CountVectorizer`: representa cada crítica pela quantidade de vezes que cada palavra aparece. Nessa abordagem, termos com a mesma frequência recebem o mesmo valor, independentemente de sua relevância no restante do conjunto;
+* `TfidfVectorizer`: calcula o peso de cada palavra considerando sua frequência dentro da crítica e sua raridade no corpus. Palavras muito comuns em vários textos recebem menor peso, enquanto termos mais específicos e representativos recebem maior importância.
+
+O projeto escolhe o **TF-IDF**, pois a classificação de sentimentos depende da identificação de termos capazes de diferenciar avaliações positivas e negativas. Palavras como “excellent”, “wonderful”, “boring” ou “terrible” tendem a apresentar maior valor discriminativo do que palavras frequentes e pouco informativas.
+
+### d) Prevenção de Vazamento de Dados
+
+O vetorizador TF-IDF deve aprender o vocabulário e os pesos exclusivamente a partir do conjunto de treinamento. Por esse motivo, utiliza-se `fit_transform()` nos textos de treino e apenas `transform()` nos textos de teste.
+
+Esse procedimento impede que palavras, frequências ou padrões presentes no conjunto de teste influenciem a representação utilizada durante o treinamento. Caso o vetorizador fosse ajustado antes da divisão dos dados, ocorreria vazamento de informação, tornando as métricas finais excessivamente otimistas.
+
+### e) Matriz de Características
+
+Após a vetorização, cada linha da matriz representa uma crítica e cada coluna corresponde a uma palavra do vocabulário identificado no conjunto de treinamento. No experimento, a matriz de treinamento possui aproximadamente **1.340 críticas por 20.625 termos**.
+
+Como cada crítica contém apenas uma pequena parcela do vocabulário total, a maior parte dos valores da matriz é igual a zero. Por isso, o `TfidfVectorizer` utiliza uma representação esparsa, que armazena apenas os valores diferentes de zero e reduz o consumo de memória.
+
+Ao final desta etapa, os dados encontram-se balanceados, separados corretamente entre treinamento e teste e representados em formato numérico, ficando prontos para a etapa de modelagem.
+
+## MODEL — Seleção e Treinamento dos Modelos
+
+Nesta etapa, os dados já balanceados e representados numericamente por meio do TF-IDF são utilizados para treinar diferentes algoritmos de classificação supervisionada. O projeto compara quatro modelos: **Support Vector Machine (SVM)**, **Regressão Logística**, **Árvore de Decisão** e **Naive Bayes**. Todos recebem como entrada a matriz TF-IDF do conjunto de treinamento e os respectivos rótulos de sentimento, garantindo uma comparação sob as mesmas condições. Nos resultados iniciais, o SVM alcança aproximadamente 84% de acurácia, seguido pela Regressão Logística, com 83%, enquanto a Árvore de Decisão e o Naive Bayes obtêm cerca de 64% e 63%, respectivamente. O melhor desempenho dos modelos lineares está relacionado à natureza dos dados textuais vetorizados, que geram uma matriz esparsa, de alta dimensionalidade e com grande quantidade de características. Após essa comparação, o SVM é selecionado como modelo principal do projeto e passa por uma etapa de otimização com `GridSearchCV`. Esse procedimento testa diferentes combinações de hiperparâmetros, como os valores do parâmetro de regularização `C` e os kernels `linear` e `rbf`, utilizando validação cruzada com cinco divisões. Em cada combinação, o conjunto de treinamento é repartido em cinco partes, sendo quatro utilizadas para treinar o modelo e uma para validação, alternando-se a parte de validação até que todas tenham sido avaliadas. Ao final da busca, a configuração com melhor desempenho médio é o **SVM com kernel linear e `C=1`**, escolhido para a avaliação final no conjunto de teste.
+
+## COMMUNICATE — Avaliação e Comunicação dos Resultados
+
+Nesta etapa, os resultados obtidos pelos modelos são interpretados e apresentados de forma a responder à pergunta definida no início do projeto. A comparação das métricas mostra que o **Support Vector Machine (SVM)** foi o classificador com melhor desempenho, alcançando aproximadamente **84% de acurácia**. O modelo também apresentou resultados equilibrados entre as duas classes, com F1-score próximo de **0,84 para críticas positivas** e **0,83 para críticas negativas**, indicando que ele consegue reconhecer ambos os sentimentos sem favorecer excessivamente uma categoria. O relatório de classificação complementa essa análise ao detalhar precisão, revocação e F1-score para cada classe. Já a matriz de confusão permite observar os acertos e erros de forma mais específica: foram registradas 290 classificações corretas de uma classe e 265 da outra, além de 45 falsos positivos e 60 falsos negativos. Esses resultados comunicam que os padrões extraídos pelo TF-IDF são suficientemente informativos para distinguir grande parte das avaliações positivas e negativas, embora ainda existam limitações em textos ambíguos, irônicos ou que contenham sentimentos mistos. De forma geral, o experimento demonstra que a combinação entre vetorização TF-IDF e SVM linear constitui uma solução consistente para a classificação automática de sentimentos no conjunto de críticas do IMDb.
+
+### Objetivo científico do projeto
+
+* Investigar se o conteúdo textual de uma crítica cinematográfica contém informações suficientes para identificar automaticamente o sentimento expresso pelo usuário.
+* Avaliar a aplicação de algoritmos clássicos de Machine Learning supervisionado em uma tarefa de classificação binária de textos.
+* Comparar diferentes classificadores sob as mesmas condições de treinamento e representação dos dados.
+* Verificar quais modelos apresentam maior capacidade de generalização para críticas não utilizadas durante o treinamento.
+* Analisar se a representação TF-IDF consegue capturar palavras e padrões relevantes para separar avaliações positivas e negativas.
+
+### O que o projeto esperava obter desde o início?
+
+* Construir um modelo capaz de aprender associações entre palavras presentes nas críticas e seus respectivos rótulos de sentimento.
+* Identificar qual dos algoritmos avaliados apresenta o melhor desempenho para o problema.
+* Obter resultados equilibrados para as classes positiva e negativa, evitando que o modelo favoreça apenas uma delas.
+* Demonstrar, de forma didática, as etapas necessárias para desenvolver um pipeline completo de classificação textual.
+* Produzir evidências quantitativas de que o sentimento de uma crítica pode ser estimado a partir de seu conteúdo escrito.
+
+### O que o projeto deseja prever, estimar ou permitir?
+
+* **Prever** se uma nova crítica de filme expressa um sentimento positivo ou negativo.
+* **Estimar** a capacidade de diferentes algoritmos de reconhecer padrões linguísticos associados a cada sentimento.
+* **Permitir** a classificação automática de grandes volumes de avaliações textuais.
+* **Auxiliar** processos de análise de opinião, monitoramento de satisfação e organização de feedbacks.
+* **Servir como base** para aplicações futuras mais avançadas, utilizando embeddings, redes neurais ou modelos baseados em Transformers.
+
+
+
