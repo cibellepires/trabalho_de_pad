@@ -192,7 +192,7 @@ O experimento demonstra que a preparação dos dados, o balanceamento das classe
 
 Apesar das limitações, o projeto oferece uma base adequada para compreender o funcionamento de tarefas supervisionadas de classificação textual e pode ser expandido posteriormente com técnicas mais avançadas de PLN e Deep Learning.
 
-#Etapas do AGEMC
+# Etapas do AGEMC
 ## ASK — Formulação do Problema
 A etapa inicial do projeto FMF parte da pergunta: **“Levando em consideração o contexto de revisões de filmes, conseguimos dizer se a revisão foi positiva ou negativa com base no que está escrito?”** Com base nessa questão, o objetivo é desenvolver um modelo capaz de interpretar o conteúdo textual de uma crítica e atribuir a ela uma das duas categorias possíveis de sentimento. Dessa forma, o projeto é estruturado como um problema de **classificação binária de texto**, no qual a crítica representa a informação de entrada e o sentimento, positivo ou negativo, representa a resposta esperada. Como cada exemplo do conjunto de dados já possui uma classificação associada, o aprendizado ocorre de maneira supervisionada, permitindo que o modelo identifique padrões presentes na linguagem e os utilize na análise de novas revisões.
 
