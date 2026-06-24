@@ -329,6 +329,36 @@ O melhor desempenho foi obtido pela **Regressão Logística com TF-IDF**, usada 
 
 O Stacking e o LightGBM também apresentaram resultados fortes, mas não superaram o baseline. Já a abordagem com embeddings teve desempenho inferior ao TF-IDF com Regressão Logística, o que pode estar relacionado ao fato de o modelo de embeddings usado ser geral e leve, além de críticas longas poderem perder parte do contexto por truncamento.
 
+Além da execução principal, o pipeline também foi testado em uma versão com configurações mais pesadas. Nessa versão, alguns modelos ensemble receberam maior capacidade, como mais estimadores e uma validação interna mais robusta no Stacking. Os resultados foram:
+
+As principais mudanças em relação às configurações iniciais foram:
+
+| Modelo | Configuração inicial | Configuração "pesada" |
+| --- | --- | --- |
+| XGBoost | `n_estimators=100`, `max_depth=4` | `n_estimators=200`, `max_depth=6` |
+| LightGBM | `n_estimators=100` | `n_estimators=200` |
+| Random Forest | `n_estimators=100`, `max_depth=10` | `n_estimators=150`, `max_depth=12` |
+| Stacking | `cv=2` | `cv=5` |
+
+Essas configurações controlam a complexidade e o custo de treinamento dos modelos:
+
+* **`n_estimators`** define quantas árvores serão treinadas em modelos baseados em árvores, como XGBoost, LightGBM e Random Forest. Ao aumentar esse valor, o modelo passa a ter mais etapas de aprendizado ou mais árvores para combinar. Isso pode melhorar o desempenho, mas também aumenta o tempo de treinamento.
+* **`max_depth`** define a profundidade máxima de cada árvore. Árvores mais profundas conseguem capturar relações mais complexas nos dados, mas também podem se ajustar demais ao conjunto de treino, aumentando o risco de overfitting.
+* **`cv`** no Stacking define quantas divisões de validação cruzada são usadas para gerar as previsões que treinam o meta-modelo. Um `cv` maior tende a produzir uma estimativa mais estável para o Stacking, mas também torna o treinamento mais demorado, porque os modelos base precisam ser treinados mais vezes.
+
+Assim, a versão pesada foi usada para testar se um aumento controlado de complexidade nos modelos ensemble mudaria a conclusão do pipeline principal.
+
+| Modelo | Acurácia | Precisão | Recall | F1-score | AUC-ROC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Regressão Logística (baseline) | 0,8906 | 0,8838 | 0,8994 | 0,8916 | 0,9582 |
+| LightGBM | 0,8794 | 0,8718 | 0,8896 | 0,8806 | 0,9511 |
+| Stacking | 0,8790 | 0,8742 | 0,8854 | 0,8798 | 0,9507 |
+| XGBoost | 0,8515 | 0,8328 | 0,8796 | 0,8556 | 0,9338 |
+| Random Forest | 0,8259 | 0,7893 | 0,8892 | 0,8363 | 0,9097 |
+| Embeddings + Regressão Logística | 0,8234 | 0,8233 | 0,8236 | 0,8234 | 0,9029 |
+
+Essa execução confirmou o comportamento observado no pipeline principal. As configurações mais pesadas melhoraram o desempenho de alguns modelos, principalmente LightGBM, Stacking e XGBoost, mas a **Regressão Logística com TF-IDF continuou sendo o melhor modelo geral**. Portanto, o aumento de complexidade trouxe ganhos pontuais, mas não alterou a conclusão principal do trabalho.
+
 O notebook comunica os resultados por meio de diferentes recursos:
 
 * uma tabela final comparando acurácia, precisão, recall, F1-score e AUC-ROC;
