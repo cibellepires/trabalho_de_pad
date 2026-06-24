@@ -225,6 +225,8 @@ O projeto apresenta algumas limitações:
 
 Mesmo com essas limitações, o pipeline apresenta uma evolução clara em relação ao notebook de inspiração, pois inclui baseline, modelos ensemble, embeddings semânticos, tabela comparativa, matriz de confusão e análise de erros.
 
+Link para o colab com a modelagem: <https://colab.research.google.com/drive/13W364xYsE0kYCBHrItTEd0SuB8C3xBYY?usp=sharing>
+
 ## Conclusão
 
 O projeto apresenta as principais etapas de um pipeline de Machine Learning aplicado à classificação de sentimentos em textos.
