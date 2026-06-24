@@ -1,19 +1,17 @@
 # trabalho_de_pad
 Trabalho da disciplina Pensamento Analítico de Dados - Bacharelado Inteligência Artificial
 
-**Integrantes**: Cibelle Pires Botelho, Yasmin Mageste, Julia Jaime Biancolini, Giovana Faleiro, Gustavo Pires Fontana e Felipe Rodrigues<br>
-**Tema**: Análise de sentimentos
+**Integrantes**: Cibelle Pires Botelho, Yasmin Mageste, Julia Jaime Biancolini, Giovana Faleiro, Gustavo Pires Fontana e Felipe Rodrigues
+**tema**: Análise de sentimentos
 
 # Projeto FMF - Análise de sentimentos
-Referência: <https://artificialcorner.com/p/first-ml-model>
+referência: <https://artificialcorner.com/p/first-ml-model>
 
 ## Contexto
 
 A análise de sentimentos é uma das tarefas mais recorrentes em Processamento de Linguagem Natural (PLN), com aplicações em sistemas de recomendação, monitoramento de reputação de marcas, análise de avaliações de produtos e pesquisas de opinião.
 
-O projeto utiliza esse domínio como contexto para apresentar, de forma didática, as principais etapas de construção de um pipeline de Machine Learning supervisionado para classificação de textos. O contexto escolhido foi o de críticas de filmes do IMDb, em que cada texto possui um sentimento associado.
-
-O trabalho foi inspirado em um notebook introdutório de análise de sentimentos, mas a implementação final amplia a proposta original ao utilizar uma vetorização TF-IDF mais controlada, um baseline simples, modelos ensemble e uma comparação adicional com embeddings semânticos.
+O projeto **FMF — First Machine Learning Model** utiliza esse domínio como contexto para apresentar, de forma didática, as principais etapas de construção de um pipeline de Machine Learning supervisionado para classificação de textos.
 
 ## Problema Abordado
 
@@ -24,10 +22,6 @@ O problema tratado é uma tarefa de **classificação binária de texto**. A par
 
 Trata-se de um problema de **aprendizado supervisionado**, pois cada crítica presente no conjunto de dados possui um rótulo conhecido, utilizado durante o treinamento dos modelos.
 
-A pergunta principal do projeto é:
-
-> **Levando em consideração o texto de uma crítica de filme, conseguimos prever automaticamente se ela expressa sentimento positivo ou negativo?**
-
 ## Dataset
 
 O projeto utiliza o **IMDB Dataset**, disponibilizado por meio da plataforma Kaggle. O conjunto original contém aproximadamente **50.000 críticas de filmes**, divididas entre avaliações positivas e negativas.
@@ -37,30 +31,20 @@ As principais variáveis são:
 * `review`: texto completo da crítica cinematográfica;
 * `sentiment`: sentimento associado à crítica, classificado como positivo ou negativo.
 
-No pipeline implementado em `pad.ipynb`, o conjunto utilizado depende do arquivo carregado. Quando o arquivo original `IMDB Dataset.csv` é usado, a base contém cerca de **50.000 registros**. Caso seja usado um arquivo limpo em `.parquet`, ou caso alguma linha malformada do `.csv` seja ignorada durante a leitura, esse total pode variar. Por isso, o notebook imprime a quantidade final de registros carregados antes da modelagem.
+Para fins didáticos, o projeto utiliza uma amostra de 10.000 registros, inicialmente composta por:
 
-A distribuição das classes é verificada no próprio notebook. No dataset original do IMDb, as classes positiva e negativa são praticamente equilibradas, o que reduz a necessidade de técnicas artificiais de balanceamento.
+* 9.000 avaliações positivas;
+* 1.000 avaliações negativas.
 
-Como a base final já estava equilibrada, não foi necessário aplicar undersampling ou oversampling. A estratégia adotada foi preservar a maior quantidade possível de dados e fazer uma divisão estratificada entre treino e teste.
+Essa configuração introduz propositalmente um cenário de desbalanceamento de classes.
 
 ## Tecnologias e Bibliotecas Utilizadas
 
 O projeto utiliza as seguintes bibliotecas:
 
-* `pandas`: leitura, organização e manipulação dos dados;
-* `numpy`: apoio a operações numéricas;
-* `scikit-learn`: divisão dos dados, TF-IDF, baseline, Stacking, métricas e avaliação;
-* `xgboost`: treinamento do modelo XGBoost;
-* `lightgbm`: treinamento do modelo LightGBM;
-* `matplotlib` e `seaborn`: criação dos gráficos comparativos, curvas ROC, mapa de calor e matriz de confusão;
-* `joblib`: salvamento do modelo final e do vetorizador;
-* `sentence-transformers`: geração de embeddings semânticos com o modelo `all-MiniLM-L6-v2`.
-
-Para facilitar a execução em outro ambiente, as dependências principais também foram reunidas no arquivo `requirements.txt`.
-
-Como o trabalho será executado no Google Colab, o notebook também procura o dataset em caminhos usados nesse ambiente, como `/content/IMDB Dataset.csv` e `/content/imdb_clean.parquet`. Caso alguma biblioteca não esteja disponível no Colab, ela pode ser instalada com `%pip install -q scikit-learn xgboost lightgbm seaborn joblib sentence-transformers`.
-
-O carregamento do `.csv` também possui uma leitura alternativa para lidar com eventuais linhas malformadas. Se a leitura padrão falhar, o notebook tenta carregar o arquivo ignorando linhas problemáticas, evitando que um erro de formatação interrompa todo o pipeline.
+* `pandas`: leitura, manipulação, seleção e amostragem dos dados;
+* `imbalanced-learn`: tratamento do desbalanceamento das classes por meio de undersampling;
+* `scikit-learn`: divisão dos dados, vetorização dos textos, treinamento dos modelos, avaliação de desempenho e otimização de hiperparâmetros.
 
 ## Estrutura Geral do Pipeline
 
@@ -68,327 +52,222 @@ O projeto segue um pipeline composto pelas seguintes etapas:
 
 1. **Aquisição dos dados:** obtenção do dataset de críticas do IMDb por meio do Kaggle.
 
-2. **Carregamento e verificação:** leitura do arquivo `.csv` ou `.parquet`, conferindo se as colunas `review` e `sentiment` estão presentes.
+2. **Amostragem dos dados:** seleção de uma amostra de 10.000 avaliações para execução do experimento.
 
-3. **Limpeza textual:** remoção de tags HTML, caracteres especiais, números, letras maiúsculas e espaços extras.
+3. **Balanceamento das classes:** aplicação de undersampling para reduzir a quantidade de registros da classe majoritária e produzir um conjunto balanceado.
 
-4. **Codificação dos rótulos:** conversão dos sentimentos para valores numéricos, usando `0` para negativo e `1` para positivo.
+4. **Divisão entre treino e teste:** separação dos dados em conjuntos de treinamento e avaliação.
 
-5. **Divisão entre treino e teste:** separação dos dados em 80% para treinamento e 20% para teste, com estratificação.
+5. **Vetorização textual:** transformação das críticas em representações numéricas utilizando TF-IDF.
 
-6. **Vetorização textual:** transformação das críticas em representações numéricas utilizando TF-IDF com unigramas e bigramas.
+6. **Modelagem:** treinamento e comparação de diferentes algoritmos clássicos de classificação.
 
-7. **Baseline:** treinamento de uma Regressão Logística para servir como ponto de comparação simples.
+7. **Avaliação:** análise dos resultados por meio de métricas de classificação.
 
-8. **Modelagem avançada:** treinamento de XGBoost, LightGBM, Random Forest e Stacking.
-
-9. **Comparação com embeddings:** geração de embeddings semânticos com Sentence-BERT e treinamento de uma Regressão Logística adicional.
-
-10. **Avaliação:** comparação dos modelos por acurácia, precisão, recall, F1-score e AUC-ROC, com escolha do melhor modelo pelo F1-score.
-
-11. **Análise do melhor modelo:** geração do relatório de classificação, matriz de confusão e análise de exemplos classificados incorretamente.
-
-12. **Uso futuro:** salvamento do melhor modelo e criação de uma função para prever o sentimento de novas críticas.
-
-13. **Comunicação:** apresentação de tabela final, gráficos comparativos, mapa de calor das métricas, curvas ROC e gráfico de diferença em relação ao baseline.
+8. **Otimização:** ajuste dos hiperparâmetros do melhor modelo com `GridSearchCV`.
 
 ## Preparação e Balanceamento dos Dados
 
-A preparação dos dados começa com o carregamento do dataset. O código procura o arquivo em caminhos comuns, como `IMDB Dataset.csv`, `data/IMDB Dataset.csv`, `imdb_clean.parquet` e também caminhos usados no Google Colab. Caso o arquivo não seja encontrado, o notebook informa que o dataset deve ser baixado do Kaggle.
+O projeto cria inicialmente um conjunto desbalanceado com 9.000 avaliações positivas e 1.000 avaliações negativas.
 
-Depois do carregamento, o código verifica a presença das colunas obrigatórias:
+Para evitar que os classificadores favoreçam a classe majoritária, é utilizado o `RandomUnderSampler`. Essa técnica reduz aleatoriamente a quantidade de exemplos da classe mais frequente até que ambas as classes possuam a mesma quantidade de registros.
 
-* `review`;
-* `sentiment`.
+Após o balanceamento, o conjunto utilizado contém:
 
-Em seguida, registros sem texto ou sem sentimento são removidos. Também é criada a coluna `review_clean`, que contém o texto depois da limpeza.
+* 1.000 avaliações positivas;
+* 1.000 avaliações negativas.
 
-O balanceamento artificial não foi utilizado no pipeline final. Isso acontece porque a base usada no notebook já apresenta uma distribuição praticamente equilibrada entre as classes. Assim, optou-se por manter a maior parte dos dados disponíveis, em vez de descartar exemplos.
-
-Para preservar esse equilíbrio na avaliação, a separação entre treino e teste foi feita com o parâmetro `stratify=y`.
+Embora o undersampling facilite o treinamento e a avaliação equilibrada das classes, ele também descarta parte dos dados disponíveis.
 
 ## Divisão entre Treinamento e Teste
 
-Os dados são separados em:
+Os dados balanceados são separados em:
 
-* 80% para treinamento;
-* 20% para teste.
+* 67% para treinamento;
+* 33% para teste.
 
-O conjunto de treinamento é utilizado para ajustar o vetorizador TF-IDF e treinar os modelos. O conjunto de teste é reservado para avaliar o desempenho final em críticas que não foram usadas durante o aprendizado.
-
-Como a quantidade final de registros pode variar conforme o arquivo carregado, o notebook imprime o tamanho real dos conjuntos de treino e teste durante a execução. Em todos os casos, a proporção usada é 80% para treino e 20% para teste.
-
-A divisão estratificada é importante porque mantém a proporção entre críticas positivas e negativas nos dois conjuntos.
+O conjunto de treinamento é utilizado para ajustar os parâmetros dos modelos. O conjunto de teste é reservado para avaliar o desempenho dos classificadores em dados que não foram utilizados durante o aprendizado.
 
 ## Vetorização dos Textos
 
 Como os algoritmos tradicionais de Machine Learning não processam textos diretamente, as críticas precisam ser convertidas em representações numéricas.
 
-Para isso, foi utilizado o `TfidfVectorizer`. O TF-IDF atribui peso maior a termos relevantes em uma crítica, mas que não aparecem de forma excessivamente comum em todo o conjunto de dados.
+O projeto apresenta duas abordagens:
 
-No notebook, o TF-IDF foi configurado com:
+* `CountVectorizer`: representa cada documento pela frequência de ocorrência das palavras;
+* `TfidfVectorizer`: pondera as palavras considerando sua frequência no documento e sua relevância em relação ao restante do corpus.
 
-* `max_features=5000`: limita o vocabulário aos 5.000 termos mais importantes;
-* `ngram_range=(1, 2)`: considera palavras isoladas e pares de palavras;
-* `min_df=5`: remove termos raros demais;
-* `max_df=0.8`: remove termos frequentes demais;
-* `stop_words='english'`: remove palavras muito comuns em inglês.
+A técnica escolhida é o **TF-IDF**, pois reduz a importância de palavras muito frequentes e atribui maior peso aos termos mais representativos de cada crítica.
 
-O uso de bigramas permite capturar expressões de duas palavras, o que é útil em análise de sentimentos. Expressões como `not good`, `very bad` ou `really enjoyed` podem carregar informação relevante para a classificação.
-
-O vetorizador é ajustado apenas no conjunto de treinamento com `fit_transform()`. No conjunto de teste, usa-se apenas `transform()`, evitando vazamento de informação.
-
-Além do TF-IDF, o notebook acrescenta uma comparação com **embeddings semânticos**. Para isso, é usado o modelo `sentence-transformers/all-MiniLM-L6-v2`, que transforma cada crítica em um vetor numérico capaz de representar melhor o sentido geral do texto.
-
-Essa etapa é mantida em células separadas para facilitar a execução no Google Colab. Os embeddings são salvos em arquivos `.npy`, de modo que não precisam ser recalculados toda vez que o notebook for executado.
+O vetorizador é ajustado exclusivamente no conjunto de treinamento. No conjunto de teste, utiliza-se apenas a transformação previamente aprendida, evitando vazamento de dados.
 
 ## Modelos Avaliados
 
-O projeto compara seis modelos:
+O projeto compara quatro algoritmos de classificação:
 
+* Support Vector Machine — SVM;
 * Regressão Logística;
-* XGBoost;
-* LightGBM;
-* Random Forest;
-* Stacking;
-* Embeddings + Regressão Logística.
+* Árvore de Decisão;
+* Naive Bayes.
 
-A **Regressão Logística** foi usada como baseline. Ela foi escolhida por ser uma abordagem simples, rápida, interpretável e bastante comum em tarefas de classificação de texto com TF-IDF. O papel dela é servir como ponto de comparação para verificar se os modelos mais robustos realmente trazem ganho.
+Os resultados aproximados foram:
 
-Os outros modelos representam a parte mais original do trabalho em relação à inspiração:
+| Modelo              | Acurácia |
+| ------------------- | -------: |
+| SVM                 |      84% |
+| Regressão Logística |      83% |
+| Árvore de Decisão   |      64% |
+| Naive Bayes         |      63% |
 
-* **XGBoost:** modelo ensemble baseado em gradient boosting;
-* **LightGBM:** modelo de gradient boosting eficiente para bases maiores;
-* **Random Forest:** conjunto de árvores de decisão treinadas de forma independente;
-* **Stacking:** combinação de XGBoost, LightGBM e Random Forest, usando Regressão Logística como meta-modelo.
-
-O modelo **Embeddings + Regressão Logística** tem outro papel: comparar a representação estatística do TF-IDF com uma representação semântica produzida por Sentence-BERT. Assim, o trabalho não apenas testa vários classificadores, mas também compara duas formas diferentes de representar o texto.
+O melhor desempenho foi obtido pelo **SVM com kernel linear**.
 
 ## Métricas de Avaliação
 
 O desempenho dos modelos é analisado por meio das seguintes métricas:
 
 * **Acurácia:** proporção total de previsões corretas;
-* **Precisão:** proporção de previsões corretas entre os exemplos classificados como positivos;
-* **Recall:** proporção de exemplos positivos reais identificados corretamente;
+* **Precisão:** proporção de previsões corretas entre os exemplos classificados em determinada classe;
+* **Recall:** proporção de exemplos reais de uma classe identificados corretamente;
 * **F1-score:** média harmônica entre precisão e recall;
-* **AUC-ROC:** capacidade do modelo de separar as classes considerando diferentes limiares;
 * **Relatório de classificação:** apresenta precision, recall, F1-score e suporte para cada classe;
-* **Matriz de confusão:** mostra acertos e erros entre as classes positiva e negativa.
+* **Matriz de confusão:** mostra a distribuição dos acertos e erros entre as classes.
 
-O F1-score foi usado como principal critério de comparação porque resume o equilíbrio entre precisão e recall.
+O modelo SVM apresentou aproximadamente 84% de acurácia, com F1-scores equilibrados entre as classes positiva e negativa, próximos de 0,84 e 0,83.
 
 ## Otimização de Hiperparâmetros
 
-O pipeline atual não realiza uma busca automática completa de hiperparâmetros com `GridSearchCV`, `RandomizedSearchCV` ou Optuna.
+Após a comparação inicial, o projeto utiliza o `GridSearchCV` para buscar a melhor configuração do SVM.
 
-Em vez disso, foram usados hiperparâmetros definidos manualmente para manter o tempo de execução viável e permitir a comparação entre modelos dentro do escopo do trabalho.
+São testados diferentes valores para:
 
-Essa decisão é uma limitação do projeto, mas também deixa uma possibilidade clara de melhoria futura: testar combinações de parâmetros de forma sistemática, principalmente para LightGBM, XGBoost e Stacking.
+* parâmetro de regularização `C`;
+* tipo de kernel;
+* combinações avaliadas por validação cruzada.
+
+A melhor configuração encontrada foi:
+
+```python
+SVC(C=1, kernel="linear")
+```
+
+O `GridSearchCV` permite comparar sistematicamente diferentes combinações de hiperparâmetros, evitando que o ajuste seja realizado apenas por tentativa e erro manual.
 
 ## Características do Projeto
 
 Entre as principais características do projeto estão:
 
 * aplicação prática de classificação de sentimentos;
-* uso de uma base grande de críticas do IMDb;
-* limpeza textual antes da modelagem;
-* divisão treino-teste estratificada;
-* vetorização TF-IDF com unigramas e bigramas;
-* geração de embeddings semânticos com `all-MiniLM-L6-v2`;
-* criação de baseline com Regressão Logística;
-* comparação com modelos ensemble;
-* comparação entre representação estatística e representação semântica dos textos;
-* avaliação por múltiplas métricas;
-* tabela final de comparação entre modelos;
-* gráficos comparando F1-score e AUC-ROC;
-* mapa de calor com o resumo das métricas;
-* curvas ROC dos modelos avaliados;
-* gráfico de diferença de F1-score em relação ao baseline;
-* matriz de confusão para o melhor modelo;
-* análise de erros de classificação;
-* salvamento do melhor modelo e do vetorizador;
-* função para prever o sentimento de novas críticas.
+* introdução proposital de um cenário de desbalanceamento;
+* balanceamento das classes com undersampling;
+* comparação entre `CountVectorizer` e TF-IDF;
+* treinamento de quatro algoritmos clássicos de Machine Learning;
+* avaliação com diferentes métricas de classificação;
+* comparação objetiva do desempenho dos modelos;
+* otimização do melhor classificador com `GridSearchCV`;
+* separação adequada entre ajuste do vetorizador e transformação dos dados de teste.
 
 ## Limitações Observadas
 
 O projeto apresenta algumas limitações:
 
-* o dataset precisa ser baixado separadamente do Kaggle;
-* os hiperparâmetros dos modelos foram definidos manualmente;
-* o Stacking tem custo computacional maior do que os modelos individuais;
-* o TF-IDF não captura significado semântico profundo, apenas padrões de termos;
-* a remoção de stopwords pode afetar expressões com negação, como `not good`;
-* os embeddings do `all-MiniLM-L6-v2` podem truncar textos muito longos;
-* não foi feito fine-tuning de modelos baseados em Transformers;
-* críticas irônicas, ambíguas ou com sentimentos mistos ainda podem ser classificadas incorretamente.
+* a amostra de 10.000 registros representa apenas 20% do conjunto original de 50.000 críticas;
+* após o undersampling, somente 2.000 registros são efetivamente utilizados;
+* o descarte de exemplos da classe majoritária pode eliminar informações relevantes;
+* não são avaliadas técnicas de oversampling ou geração de dados sintéticos;
+* o pré-processamento textual é relativamente simples;
+* não são discutidos procedimentos como remoção de stopwords, lematização ou tratamento de negações;
+* a avaliação utiliza apenas uma divisão entre treino e teste para a comparação inicial;
+* apenas modelos clássicos de Machine Learning são analisados;
+* abordagens baseadas em embeddings, como Word2Vec, GloVe e FastText, não são consideradas;
+* modelos baseados em Transformers, como BERT, RoBERTa e DistilBERT, não são avaliados;
+* os resultados podem variar de acordo com a amostragem e com o estado aleatório utilizado;
+* não há análise detalhada dos erros de classificação produzidos pelo modelo.
 
-Mesmo com essas limitações, o pipeline apresenta uma evolução clara em relação ao notebook de inspiração, pois inclui baseline, modelos ensemble, embeddings semânticos, tabela comparativa, matriz de confusão e análise de erros.
-
-Link para o colab com a modelagem: <https://colab.research.google.com/drive/13W364xYsE0kYCBHrItTEd0SuB8C3xBYY?usp=sharing>
 
 ## Conclusão
 
-O projeto apresenta as principais etapas de um pipeline de Machine Learning aplicado à classificação de sentimentos em textos.
+O projeto apresenta de forma didática as principais etapas de um pipeline clássico de Machine Learning aplicado à classificação de sentimentos.
 
-O experimento mostra que é possível prever automaticamente se uma crítica de filme expressa sentimento positivo ou negativo a partir do conteúdo escrito. Para isso, o texto é limpo, transformado em representações numéricas por TF-IDF e também comparado com uma representação semântica por embeddings.
+O experimento demonstra que a preparação dos dados, o balanceamento das classes, a vetorização dos textos e a escolha do algoritmo influenciam diretamente o desempenho final. Entre os modelos avaliados, o SVM com kernel linear e `C=1` apresentou o melhor resultado, alcançando aproximadamente 84% de acurácia.
 
-A principal originalidade em relação à inspiração está na comparação entre um baseline simples, modelos ensemble mais robustos e uma alternativa baseada em embeddings. Dessa forma, o trabalho não apenas reproduz a ideia de classificar sentimentos, mas investiga se abordagens diferentes de modelagem e representação textual melhoram a resposta à pergunta inicial.
+Apesar das limitações, o projeto oferece uma base adequada para compreender o funcionamento de tarefas supervisionadas de classificação textual e pode ser expandido posteriormente com técnicas mais avançadas de PLN e Deep Learning.
 
 # Etapas do AGEMC
 ## ASK — Formulação do Problema
-A etapa inicial do projeto parte da pergunta: **“Levando em consideração o texto de uma crítica de filme, conseguimos prever automaticamente se ela expressa sentimento positivo ou negativo?”** Com base nessa questão, o objetivo é desenvolver um modelo capaz de interpretar o conteúdo textual de uma crítica e atribuir a ela uma das duas categorias possíveis de sentimento.
-
-Dessa forma, o projeto é estruturado como um problema de **classificação binária de texto**, no qual a crítica representa a informação de entrada e o sentimento, positivo ou negativo, representa a resposta esperada. Como cada exemplo do conjunto de dados já possui uma classificação associada, o aprendizado ocorre de maneira supervisionada.
+A etapa inicial do projeto FMF parte da pergunta: **“Levando em consideração o contexto de revisões de filmes, conseguimos dizer se a revisão foi positiva ou negativa com base no que está escrito?”** Com base nessa questão, o objetivo é desenvolver um modelo capaz de interpretar o conteúdo textual de uma crítica e atribuir a ela uma das duas categorias possíveis de sentimento. Dessa forma, o projeto é estruturado como um problema de **classificação binária de texto**, no qual a crítica representa a informação de entrada e o sentimento, positivo ou negativo, representa a resposta esperada. Como cada exemplo do conjunto de dados já possui uma classificação associada, o aprendizado ocorre de maneira supervisionada, permitindo que o modelo identifique padrões presentes na linguagem e os utilize na análise de novas revisões.
 
 ## GET — Obtenção dos Dados
 
-Nesta etapa, são reunidos os dados necessários para o desenvolvimento do projeto. A base utilizada é o **IMDB Dataset**, disponibilizado publicamente na plataforma Kaggle e composto por aproximadamente 50.000 avaliações de filmes.
-
-O conjunto apresenta duas variáveis principais: `review`, que armazena o texto escrito pelo usuário, e `sentiment`, que indica se a avaliação foi classificada como positiva ou negativa.
+Nesta etapa, são reunidos os dados necessários para o desenvolvimento do projeto. A base utilizada é o **IMDB Dataset**, disponibilizado publicamente na plataforma Kaggle e composto por 50.000 avaliações de filmes. O conjunto apresenta duas variáveis principais: `review`, que armazena o texto escrito pelo usuário, e `sentiment`, que indica se a avaliação foi classificada como positiva ou negativa. Para tornar o experimento mais simples e reduzir o tempo de processamento, é selecionada uma amostra de 10.000 registros. Essa amostra é construída de forma propositalmente desbalanceada, contendo 9.000 críticas positivas e 1.000 negativas, permitindo que o projeto também explore os impactos do desequilíbrio entre classes e as estratégias utilizadas para corrigi-lo nas etapas posteriores.
 
 link dos dados: https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews
 
-No notebook final, o carregamento aceita tanto arquivo `.csv` quanto `.parquet`. Quando o arquivo original `IMDB Dataset.csv` é utilizado, a base contém cerca de 50.000 exemplos. Se for usado um arquivo limpo em `.parquet` ou se alguma linha malformada do `.csv` for ignorada, a quantidade final pode variar. Por isso, o próprio notebook imprime o total carregado.
-
 ## EXPLORE — Exploração e Preparação dos Dados
 
-A etapa de exploração tem como objetivo compreender a estrutura do conjunto de dados e prepará-lo para o treinamento dos modelos. Nesse momento, são observadas a distribuição das classes, a quantidade de registros disponíveis, as variáveis presentes e a forma como os textos serão representados numericamente.
+A etapa de exploração tem como objetivo compreender a estrutura do conjunto de dados e prepará-lo para o treinamento dos modelos. Nesse momento, são observadas a distribuição das classes, a quantidade de registros disponíveis, as variáveis presentes e a forma como os textos serão representados numericamente. Essa análise é importante porque problemas como desbalanceamento, divisão inadequada dos dados ou vazamento de informações podem comprometer a avaliação dos classificadores.
 
-### a) Análise da Distribuição das Classes
+### a) Análise e Tratamento do Desbalanceamento
 
-A base final apresenta distribuição praticamente equilibrada entre críticas positivas e negativas. Por isso, não foi aplicado balanceamento artificial. A decisão foi manter a maior quantidade possível de textos e usar divisão estratificada para preservar a proporção das classes no treino e no teste.
+A amostra inicial contém 10.000 críticas, distribuídas de forma desigual entre as classes: 9.000 avaliações positivas e 1.000 negativas. Esse desbalanceamento pode levar o modelo a favorecer a classe majoritária, alcançando uma acurácia aparentemente elevada mesmo sem aprender adequadamente os padrões associados às críticas negativas.
 
-Essa escolha evita o descarte de dados e mantém a avaliação mais próxima do conjunto original.
+Para corrigir esse problema, é aplicada a técnica de **undersampling aleatório** com a classe `RandomUnderSampler`, da biblioteca `imbalanced-learn`. O procedimento reduz a quantidade de exemplos positivos até igualá-la à quantidade de exemplos negativos. Ao final, é obtido o conjunto balanceado `df_review_bal`, composto por 2.000 registros, sendo 1.000 avaliações positivas e 1.000 negativas.
+
+O balanceamento permite que as duas classes tenham a mesma influência durante o treinamento. Entretanto, como o undersampling descarta parte dos registros da classe majoritária, essa solução também reduz a quantidade de informações disponíveis para o modelo.
 
 ### b) Separação entre Treinamento e Teste
 
-Os dados são divididos em conjuntos de treinamento e teste por meio da função `train_test_split`, disponibilizada pelo `scikit-learn`.
+Após o balanceamento, os dados são divididos em conjuntos de treinamento e teste por meio da função `train_test_split`, disponibilizada pelo `scikit-learn`. A divisão reserva 67% dos registros para treinamento e 33% para teste.
 
-A divisão reserva 80% dos registros para treinamento e 20% para teste. O parâmetro `stratify=y` é usado para preservar a proporção entre críticas positivas e negativas nos dois conjuntos.
+O conjunto de treinamento é utilizado para que os algoritmos identifiquem padrões linguísticos associados aos sentimentos positivo e negativo. Já o conjunto de teste permanece separado durante o aprendizado e é utilizado somente para verificar o comportamento dos modelos diante de críticas não observadas anteriormente.
 
-O conjunto de treinamento é utilizado para ajustar o TF-IDF e treinar os modelos. O conjunto de teste é usado apenas no final, para avaliar o comportamento dos modelos diante de críticas não observadas anteriormente.
+Considerando o conjunto balanceado de 2.000 registros, a divisão resulta em aproximadamente 1.340 críticas para treinamento e 660 para teste. Para preservar a proporção das classes em ambas as partes, a divisão pode ser realizada de forma estratificada, utilizando o parâmetro `stratify`.
 
 ### c) Conversão dos Textos em Representações Numéricas
 
-Os textos das críticas não podem ser processados diretamente pelos algoritmos clássicos de Machine Learning. Por isso, eles são transformados em vetores numéricos por meio do TF-IDF.
+Os textos das críticas não podem ser processados diretamente pelos algoritmos clássicos de Machine Learning. Por isso, eles precisam ser transformados em vetores numéricos que representem as palavras presentes em cada documento.
 
-O projeto utiliza `TfidfVectorizer` com limite de 5.000 características, unigramas e bigramas, remoção de termos muito raros e remoção de termos frequentes demais. Com isso, o modelo passa a trabalhar com uma matriz em que cada linha representa uma crítica e cada coluna representa um termo ou par de termos.
+O projeto apresenta duas técnicas baseadas no modelo **Bag of Words**, em que cada palavra do vocabulário corresponde a uma característica:
 
-Além disso, o projeto inclui uma comparação com embeddings gerados pelo modelo `sentence-transformers/all-MiniLM-L6-v2`. Nessa abordagem, cada crítica também é representada por um vetor semântico, permitindo comparar uma representação baseada em frequência de palavras com uma representação baseada no significado geral do texto.
+* `CountVectorizer`: representa cada crítica pela quantidade de vezes que cada palavra aparece. Nessa abordagem, termos com a mesma frequência recebem o mesmo valor, independentemente de sua relevância no restante do conjunto;
+* `TfidfVectorizer`: calcula o peso de cada palavra considerando sua frequência dentro da crítica e sua raridade no corpus. Palavras muito comuns em vários textos recebem menor peso, enquanto termos mais específicos e representativos recebem maior importância.
+
+O projeto escolhe o **TF-IDF**, pois a classificação de sentimentos depende da identificação de termos capazes de diferenciar avaliações positivas e negativas. Palavras como “excellent”, “wonderful”, “boring” ou “terrible” tendem a apresentar maior valor discriminativo do que palavras frequentes e pouco informativas.
 
 ### d) Prevenção de Vazamento de Dados
 
-O vetorizador TF-IDF aprende o vocabulário e os pesos exclusivamente a partir do conjunto de treinamento. Por esse motivo, utiliza-se `fit_transform()` nos textos de treino e apenas `transform()` nos textos de teste.
+O vetorizador TF-IDF deve aprender o vocabulário e os pesos exclusivamente a partir do conjunto de treinamento. Por esse motivo, utiliza-se `fit_transform()` nos textos de treino e apenas `transform()` nos textos de teste.
 
-Esse procedimento impede que palavras, frequências ou padrões presentes no conjunto de teste influenciem a representação utilizada durante o treinamento.
+Esse procedimento impede que palavras, frequências ou padrões presentes no conjunto de teste influenciem a representação utilizada durante o treinamento. Caso o vetorizador fosse ajustado antes da divisão dos dados, ocorreria vazamento de informação, tornando as métricas finais excessivamente otimistas.
 
 ### e) Matriz de Características
 
-Após a vetorização, a matriz de treinamento possui uma linha para cada crítica do conjunto de treino e até **5.000 características**, de acordo com o limite definido no `TfidfVectorizer`.
+Após a vetorização, cada linha da matriz representa uma crítica e cada coluna corresponde a uma palavra do vocabulário identificado no conjunto de treinamento. No experimento, a matriz de treinamento possui aproximadamente **1.340 críticas por 20.625 termos**.
 
-Como cada crítica contém apenas uma pequena parcela do vocabulário total, a maior parte dos valores da matriz é igual a zero. Por isso, o `TfidfVectorizer` utiliza uma representação esparsa, que reduz o consumo de memória.
+Como cada crítica contém apenas uma pequena parcela do vocabulário total, a maior parte dos valores da matriz é igual a zero. Por isso, o `TfidfVectorizer` utiliza uma representação esparsa, que armazena apenas os valores diferentes de zero e reduz o consumo de memória.
 
-Ao final desta etapa, os dados estão limpos, separados corretamente entre treinamento e teste e representados em formato numérico por TF-IDF. As células de embeddings aparecem separadas no notebook para facilitar a execução e armazenam os vetores gerados em arquivos `.npy`.
+Ao final desta etapa, os dados encontram-se balanceados, separados corretamente entre treinamento e teste e representados em formato numérico, ficando prontos para a etapa de modelagem.
 
 ## MODEL — Seleção e Treinamento dos Modelos
 
-Nesta etapa, os dados representados numericamente por meio do TF-IDF são utilizados para treinar diferentes algoritmos de classificação supervisionada.
-
-O primeiro modelo treinado é uma **Regressão Logística**, usada como baseline. Esse modelo representa uma solução simples e tradicional para classificação de texto. A partir dele, é possível comparar se modelos mais complexos realmente melhoram o desempenho.
-
-Depois do baseline, o projeto treina os seguintes modelos:
-
-* **XGBoost**;
-* **LightGBM**;
-* **Random Forest**;
-* **Stacking**.
-
-O Stacking combina XGBoost, LightGBM e Random Forest como modelos base, utilizando uma Regressão Logística como meta-modelo. Assim, ele tenta aproveitar diferentes formas de aprendizado e combinar suas previsões.
-
-Depois desses modelos, o notebook acrescenta o modelo **Embeddings + Regressão Logística**. Ele usa os vetores semânticos gerados pelo Sentence-BERT e treina uma Regressão Logística sobre esses embeddings.
-
-Todos os modelos são avaliados no mesmo conjunto de teste e comparados em uma tabela única.
+Nesta etapa, os dados já balanceados e representados numericamente por meio do TF-IDF são utilizados para treinar diferentes algoritmos de classificação supervisionada. O projeto compara quatro modelos: **Support Vector Machine (SVM)**, **Regressão Logística**, **Árvore de Decisão** e **Naive Bayes**. Todos recebem como entrada a matriz TF-IDF do conjunto de treinamento e os respectivos rótulos de sentimento, garantindo uma comparação sob as mesmas condições. Nos resultados iniciais, o SVM alcança aproximadamente 84% de acurácia, seguido pela Regressão Logística, com 83%, enquanto a Árvore de Decisão e o Naive Bayes obtêm cerca de 64% e 63%, respectivamente. O melhor desempenho dos modelos lineares está relacionado à natureza dos dados textuais vetorizados, que geram uma matriz esparsa, de alta dimensionalidade e com grande quantidade de características. Após essa comparação, o SVM é selecionado como modelo principal do projeto e passa por uma etapa de otimização com `GridSearchCV`. Esse procedimento testa diferentes combinações de hiperparâmetros, como os valores do parâmetro de regularização `C` e os kernels `linear` e `rbf`, utilizando validação cruzada com cinco divisões. Em cada combinação, o conjunto de treinamento é repartido em cinco partes, sendo quatro utilizadas para treinar o modelo e uma para validação, alternando-se a parte de validação até que todas tenham sido avaliadas. Ao final da busca, a configuração com melhor desempenho médio é o **SVM com kernel linear e `C=1`**, escolhido para a avaliação final no conjunto de teste.
 
 ## COMMUNICATE — Avaliação e Comunicação dos Resultados
 
-Nesta etapa, os resultados obtidos pelos modelos são interpretados e apresentados de forma a responder à pergunta definida no início do projeto.
-
-Na execução final do `pad.ipynb`, os resultados obtidos foram:
-
-| Modelo | Acurácia | Precisão | Recall | F1-score | AUC-ROC |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Regressão Logística (baseline) | 0,8906 | 0,8838 | 0,8994 | 0,8916 | 0,9582 |
-| Stacking | 0,8677 | 0,8627 | 0,8746 | 0,8686 | 0,9415 |
-| LightGBM | 0,8640 | 0,8553 | 0,8762 | 0,8656 | 0,9412 |
-| Random Forest | 0,8212 | 0,7847 | 0,8854 | 0,8320 | 0,9048 |
-| XGBoost | 0,8149 | 0,7825 | 0,8722 | 0,8249 | 0,9058 |
-| Embeddings + Regressão Logística | 0,8234 | 0,8233 | 0,8236 | 0,8234 | 0,9029 |
-
-O melhor desempenho foi obtido pela **Regressão Logística com TF-IDF**, usada como baseline. Esse resultado é importante porque mostra que, para este problema, aumentar a complexidade do modelo não garantiu melhor desempenho. A representação TF-IDF já capturou padrões muito informativos para a separação entre críticas positivas e negativas, e um modelo linear foi suficiente para aproveitar bem esses padrões.
-
-O Stacking e o LightGBM também apresentaram resultados fortes, mas não superaram o baseline. Já a abordagem com embeddings teve desempenho inferior ao TF-IDF com Regressão Logística, o que pode estar relacionado ao fato de o modelo de embeddings usado ser geral e leve, além de críticas longas poderem perder parte do contexto por truncamento.
-
-Além da execução principal, o pipeline também foi testado em uma versão com configurações mais pesadas. Nessa versão, alguns modelos ensemble receberam maior capacidade, como mais estimadores e uma validação interna mais robusta no Stacking. Os resultados foram:
-
-As principais mudanças em relação às configurações iniciais foram:
-
-| Modelo | Configuração inicial | Configuração "pesada" |
-| --- | --- | --- |
-| XGBoost | `n_estimators=100`, `max_depth=4` | `n_estimators=200`, `max_depth=6` |
-| LightGBM | `n_estimators=100` | `n_estimators=200` |
-| Random Forest | `n_estimators=100`, `max_depth=10` | `n_estimators=150`, `max_depth=12` |
-| Stacking | `cv=2` | `cv=5` |
-
-Essas configurações controlam a complexidade e o custo de treinamento dos modelos:
-
-* **`n_estimators`** define quantas árvores serão treinadas em modelos baseados em árvores, como XGBoost, LightGBM e Random Forest. Ao aumentar esse valor, o modelo passa a ter mais etapas de aprendizado ou mais árvores para combinar. Isso pode melhorar o desempenho, mas também aumenta o tempo de treinamento.
-* **`max_depth`** define a profundidade máxima de cada árvore. Árvores mais profundas conseguem capturar relações mais complexas nos dados, mas também podem se ajustar demais ao conjunto de treino, aumentando o risco de overfitting.
-* **`cv`** no Stacking define quantas divisões de validação cruzada são usadas para gerar as previsões que treinam o meta-modelo. Um `cv` maior tende a produzir uma estimativa mais estável para o Stacking, mas também torna o treinamento mais demorado, porque os modelos base precisam ser treinados mais vezes.
-
-Assim, a versão pesada foi usada para testar se um aumento controlado de complexidade nos modelos ensemble mudaria a conclusão do pipeline principal.
-
-| Modelo | Acurácia | Precisão | Recall | F1-score | AUC-ROC |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Regressão Logística (baseline) | 0,8906 | 0,8838 | 0,8994 | 0,8916 | 0,9582 |
-| LightGBM | 0,8794 | 0,8718 | 0,8896 | 0,8806 | 0,9511 |
-| Stacking | 0,8790 | 0,8742 | 0,8854 | 0,8798 | 0,9507 |
-| XGBoost | 0,8515 | 0,8328 | 0,8796 | 0,8556 | 0,9338 |
-| Random Forest | 0,8259 | 0,7893 | 0,8892 | 0,8363 | 0,9097 |
-| Embeddings + Regressão Logística | 0,8234 | 0,8233 | 0,8236 | 0,8234 | 0,9029 |
-
-Essa execução confirmou o comportamento observado no pipeline principal. As configurações mais pesadas melhoraram o desempenho de alguns modelos, principalmente LightGBM, Stacking e XGBoost, mas a **Regressão Logística com TF-IDF continuou sendo o melhor modelo geral**. Portanto, o aumento de complexidade trouxe ganhos pontuais, mas não alterou a conclusão principal do trabalho.
-
-O notebook comunica os resultados por meio de diferentes recursos:
-
-* uma tabela final comparando acurácia, precisão, recall, F1-score e AUC-ROC;
-* gráficos comparativos de F1-score e AUC-ROC;
-* um mapa de calor resumindo as métricas dos modelos;
-* curvas ROC para visualizar a separação entre as classes;
-* um gráfico mostrando a diferença de F1-score de cada modelo em relação ao baseline;
-* um relatório de classificação do melhor modelo;
-* uma matriz de confusão do melhor modelo;
-* uma análise de exemplos classificados incorretamente.
-
-A tabela permite comparar o baseline, os modelos ensemble e o modelo baseado em embeddings. Os gráficos ajudam a observar visualmente quais modelos tiveram melhor F1-score e AUC-ROC, e o gráfico de diferença em relação ao baseline mostra se a maior complexidade realmente trouxe ganho. A matriz de confusão mostra quantas críticas positivas e negativas foram classificadas corretamente ou confundidas entre si. A análise de erros ajuda a entender limitações do modelo, principalmente em textos ambíguos, irônicos ou com sentimentos mistos.
-
-De forma geral, o experimento demonstra que a combinação entre limpeza textual, TF-IDF, embeddings e modelos de classificação consegue responder à pergunta inicial. Além disso, a comparação com o baseline e com a representação semântica deixa mais clara a originalidade do trabalho em relação ao notebook de inspiração.
-
-Assim, a resposta ao ASK é positiva: **sim, é possível prever automaticamente se uma crítica de filme expressa sentimento positivo ou negativo a partir do texto**. Porém, o resultado mais relevante da comparação foi perceber que a solução mais simples, Regressão Logística com TF-IDF, teve melhor desempenho que os modelos mais complexos avaliados.
+Nesta etapa, os resultados obtidos pelos modelos são interpretados e apresentados de forma a responder à pergunta definida no início do projeto. A comparação das métricas mostra que o **Support Vector Machine (SVM)** foi o classificador com melhor desempenho, alcançando aproximadamente **84% de acurácia**. O modelo também apresentou resultados equilibrados entre as duas classes, com F1-score próximo de **0,84 para críticas positivas** e **0,83 para críticas negativas**, indicando que ele consegue reconhecer ambos os sentimentos sem favorecer excessivamente uma categoria. O relatório de classificação complementa essa análise ao detalhar precisão, revocação e F1-score para cada classe. Já a matriz de confusão permite observar os acertos e erros de forma mais específica: foram registradas 290 classificações corretas de uma classe e 265 da outra, além de 45 falsos positivos e 60 falsos negativos. Esses resultados comunicam que os padrões extraídos pelo TF-IDF são suficientemente informativos para distinguir grande parte das avaliações positivas e negativas, embora ainda existam limitações em textos ambíguos, irônicos ou que contenham sentimentos mistos. De forma geral, o experimento demonstra que a combinação entre vetorização TF-IDF e SVM linear constitui uma solução consistente para a classificação automática de sentimentos no conjunto de críticas do IMDb.
 
 ### Objetivo científico do projeto
 
 * Investigar se o conteúdo textual de uma crítica cinematográfica contém informações suficientes para identificar automaticamente o sentimento expresso pelo usuário.
-* Avaliar a aplicação de algoritmos de Machine Learning supervisionado em uma tarefa de classificação binária de textos.
-* Comparar uma abordagem simples de baseline com modelos ensemble e uma abordagem baseada em embeddings.
+* Avaliar a aplicação de algoritmos clássicos de Machine Learning supervisionado em uma tarefa de classificação binária de textos.
+* Comparar diferentes classificadores sob as mesmas condições de treinamento e representação dos dados.
 * Verificar quais modelos apresentam maior capacidade de generalização para críticas não utilizadas durante o treinamento.
-* Analisar se a representação TF-IDF e a representação por embeddings conseguem capturar padrões relevantes para separar avaliações positivas e negativas.
+* Analisar se a representação TF-IDF consegue capturar palavras e padrões relevantes para separar avaliações positivas e negativas.
 
 ### O que o projeto esperava obter desde o início?
 
 * Construir um modelo capaz de aprender associações entre palavras presentes nas críticas e seus respectivos rótulos de sentimento.
 * Identificar qual dos algoritmos avaliados apresenta o melhor desempenho para o problema.
-* Obter resultados equilibrados para as classes positiva e negativa.
+* Obter resultados equilibrados para as classes positiva e negativa, evitando que o modelo favoreça apenas uma delas.
 * Demonstrar, de forma didática, as etapas necessárias para desenvolver um pipeline completo de classificação textual.
 * Produzir evidências quantitativas de que o sentimento de uma crítica pode ser estimado a partir de seu conteúdo escrito.
 
@@ -398,26 +277,18 @@ Assim, a resposta ao ASK é positiva: **sim, é possível prever automaticamente
 * **Estimar** a capacidade de diferentes algoritmos de reconhecer padrões linguísticos associados a cada sentimento.
 * **Permitir** a classificação automática de grandes volumes de avaliações textuais.
 * **Auxiliar** processos de análise de opinião, monitoramento de satisfação e organização de feedbacks.
-* **Servir como base** para aplicações futuras mais avançadas, como fine-tuning de Transformers, análise de explicabilidade ou comparação com outros embeddings.
+* **Servir como base** para aplicações futuras mais avançadas, utilizando embeddings, redes neurais ou modelos baseados em Transformers.
 
-## Linha do Tempo
+## Próximos Passos
 
-### Semana 1 — Definição do Tema e Estudo da Referência
+### Semana 3 — Modelagem e Comunicação
 
-Escolha do tema de análise de sentimentos e estudo inicial do projeto de referência. Nessa etapa, o grupo analisou a proposta original e a ideia geral de aplicar Machine Learning supervisionado para classificar críticas de filmes como positivas ou negativas.
+Estudo da implementação dos modelos utilizados no projeto de referência, incluindo a análise do processo de treinamento, comparação de desempenho e avaliação das métricas. Também será aprofundada a etapa de comunicação dos resultados, buscando compreender como as conclusões do projeto são apresentadas e relacionadas ao problema inicialmente definido.
 
-### Semana 2 — Entendimento do AGEMC e Preparação Inicial
+### Semana 4 — Definição e Implementação da Originalidade
 
-Organização do trabalho a partir do ciclo AGEMC. Foram definidas a pergunta inicial do projeto, a fonte dos dados, as variáveis principais do dataset e as primeiras etapas de preparação dos textos. Também foi iniciado o entendimento do pipeline de vetorização textual com TF-IDF e divisão entre treino e teste.
-
-### Semana 3 — Definição e Implementação da Originalidade
-
-Definição da contribuição original do projeto, identificando qual etapa do ciclo AGEMC será modificada, ampliada ou adaptada. Nesta semana, a originalidade foi implementada principalmente na etapa de modelagem e comunicação, com a inclusão de baseline, modelos ensemble, embeddings semânticos, tabela comparativa, gráficos, matriz de confusão e análise de erros.
-
-### Semana 4 — Modelagem e Comunicação
-
-Estudo da implementação dos modelos utilizados no projeto de referência, incluindo a análise do processo de treinamento, comparação de desempenho e avaliação das métricas. Também foi aprofundada a etapa de comunicação dos resultados, buscando compreender como as conclusões do projeto são apresentadas e relacionadas ao problema inicialmente definido.
+Definição da contribuição original do projeto, identificando qual etapa do ciclo AGEMC será modificada, ampliada ou adaptada. Nesta semana, também será realizada a implementação da proposta escolhida, com a descrição das alterações realizadas e da justificativa para sua aplicação.
 
 ### Semana 5 — Apresentação Final
 
-Preparação e realização de uma apresentação para a turma, reunindo todas as etapas desenvolvidas ao longo do projeto. A apresentação irá abordar o problema investigado, a obtenção e exploração dos dados, a modelagem, a comunicação dos resultados e a contribuição original implementada.
+Preparação e realização de uma apresentação para a turma, reunindo todas as etapas desenvolvidas ao longo do projeto. A apresentação deverá abordar o problema investigado, a obtenção e exploração dos dados, a modelagem, a comunicação dos resultados e a contribuição original implementada.
